@@ -21,7 +21,7 @@ There are two possible forms of command:
 
 ```python sand_client_header.py <url> <file_name>```
 
-<url> must be to an http server, but may be specified either as a full url
+```<url>``` must be to an http server, but may be specified either as a full url
 (```http://localhost:5000/headers```) or abbreviated with only the server and path
 (```localhost:5000/header```)
 
@@ -29,4 +29,4 @@ Example:
 
 ```python sand_client_header.py localhost:5000/headers SAND-MaxRTT "maxRTT=200"```
 
-For the version with <file_name>, the file should contain one HTTP header per line.
+For the version with ```<file_name>```, the file should contain one HTTP header per line.
