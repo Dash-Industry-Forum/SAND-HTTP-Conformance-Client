@@ -57,29 +57,33 @@ SAND_METHOD_BODY = "body"
 def validate_body(url):
     is_valid = False
     try:
-        message_request = requests.get(url)
+        message_resp = requests.get(url)
 
-        if message_request.headers["Content-Type"] != SAND_CONTENT_TYPE:
-            logging.error(("TEST message KO|Wrong content type|" +
+        if message_resp.headers["Content-Type"] != SAND_CONTENT_TYPE:
+            logging.info(("[TEST] message KO|Wrong content type|" +
                            "expected=%s|used=%s"), 
                            SAND_CONTENT_TYPE,
-                           message_request.headers["Content-Type"])
+                           message_resp.headers["Content-Type"])
         else:
-            logging.info("TEST message OK|Valid content type|%s",
+            logging.info("[TEST] message OK|Valid content type|%s",
                          SAND_CONTENT_TYPE)
         
         validator = XMLValidator()
         try:
-            if validator.from_string(message_request.content):
-                logging.info("TEST message OK|XML message format valid")
+            if validator.from_string(message_resp.content):
+                logging.info("[TEST] message OK|XML message format valid")
                 is_valid = True
             else:
-                logging.error("TEST message KO|XML message format invalid")
-        except:
-            logging.error("TEST message KO|XML message format invalid")
+                logging.info("[TEST] message KO|XML message format invalid")
+        except XMLValidator as e:
+            logging.error("XML message format invalid")
 
     except requests.exceptions.RequestException as e:
-        logging.error("TEST message KO|Could not retrieve the message|%s",
+        logging.error("Could not retrieve the message|%s",
+                      url)
+        logging.error(e)
+    except IOError as e:
+        logging.error("Error when retrieving the message|%s",
                       url)
         logging.error(e)
    
@@ -91,26 +95,25 @@ def validate_header(url):
 
     # Test 1 : Presence of MPEG DASH SAND header in response
     if SAND_HEADER in r.headers:
-        logging.info("TEST header OK|%s header found in the response",
+        logging.info("[TEST] header OK|%s header found in the response",
                       SAND_HEADER)
         sand_url = r.headers[SAND_HEADER]
 
         # Test 2 : Check the content of the header is a valid URL
         try:
             urllib.urlopen(sand_url)
-            logging.info("TEST URL OK|The provided URL is valid|%s",
+            logging.info("[TEST] URL OK|The provided URL is valid|%s",
                          sand_url)
 
+            # Test 3 : Validating the provided message
+            is_valid = validate_body(sand_url)
         except IOError:
-            logging.error("TEST URL KO|The provided URL is not valid|%s",
+            logging.info("[TEST] URL KO|The provided URL is not valid|%s",
                           sand_url)
 
-        # Test 3 : Validating the provided message
-        is_valid = validate_body(sand_url)
-
     else:
-        logging.error("TEST header KO|No %s header found in the response.",
-                      SAND_HEADER)
+        logging.info("[TEST] header KO|No %s header found in the response.",
+                     SAND_HEADER)
     return is_valid
 
 def print_help():
