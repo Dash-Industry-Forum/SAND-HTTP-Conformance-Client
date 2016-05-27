@@ -75,7 +75,7 @@ def validate_body(url):
                 is_valid = True
             else:
                 logging.info("[TEST] message KO|XML message format invalid")
-        except XMLValidator as e:
+        except:
             logging.error("XML message format invalid")
 
     except requests.exceptions.RequestException as e:
@@ -125,16 +125,24 @@ def print_help():
 def main():
     sand_method = sys.argv[1]
     url_to_request = sys.argv[2]
-
+    success = False
     if sand_method == SAND_METHOD_HEADER:
-        return validate_header(url_to_request)
+        success = validate_header(url_to_request)
 
     elif sand_method == SAND_METHOD_BODY:
-        return validate_body(url_to_request)
+        success = validate_body(url_to_request)
 
     else:
         print_help()
         logging.error('Unknown SAND method "%s"', sand_method)
+        return
+
+    if success:
+        logging.info("[RESULT] Sucess")
+    else:
+        logging.info("[RESULT] Failure")
+
+    return success
 
 if __name__ == "__main__":
     main()
