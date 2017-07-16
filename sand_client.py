@@ -36,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
+import re
 import urllib
 import requests
 import click
@@ -52,34 +53,48 @@ SAND_HEADER = "mpeg-dash-sand"
 SAND_CONTENT_TYPE = "application/sand+xml"
 
 # Method
-SAND_METHOD_HEADER = "header"
-SAND_METHOD_BODY = "body"
+SAND_PER_PROTOCOL_ERROR = "error"
+SAND_PER_PROTOCOL_ENFORCEMENT = "enforcement"
+SAND_PER_PROTOCOL_ASSISTANCE = "assistance"
 
-def validate_body(url):
+def validate_response(url, regex_status_code):
     """
     Validate that the body of the HTTP response complies
     with the rules specified in ISO/IEX 23009-5.
     """
-    is_valid = False
+    is_valid = True
     try:
-        message_resp = requests.get(url)
+        resp = requests.get(url)
 
-        if message_resp.headers["Content-Type"] != SAND_CONTENT_TYPE:
-            logging.info(("[TEST] message KO|Wrong content type|"
+        # Test 1 - Verify that the SAND mime type is used.
+        if resp.headers["Content-Type"] != SAND_CONTENT_TYPE:
+            logging.info(("[TEST] content_type header|KO|Wrong content type|"
                           "expected=%s|used=%s"),
                          SAND_CONTENT_TYPE,
-                         message_resp.headers["Content-Type"])
+                         resp.headers["Content-Type"])
+            is_valid = False
         else:
-            logging.info("[TEST] message OK|Valid content type|%s",
+            logging.info("[TEST] content-type header|OK|Valid content type|%s",
                          SAND_CONTENT_TYPE)
 
+        # Test 2 - Verify that the HTTP response code is as expected.
+        expected = re.compile(regex_status_code)
+        if expected.match(str(resp.status_code)):
+            logging.info("[TEST] HTTP response code|OK|value=%s",
+                         resp.status_code)
+        else:
+            logging.info("[TEST] HTTP response code|KO|value=%s|regex=%s",
+                         resp.status_code, regex_status_code)
+            is_valid = False
+
+        # Test 3 - Validate the SAND message in response.
         validator = XMLValidator()
         try:
-            if validator.from_string(message_resp.content):
-                logging.info("[TEST] message OK|XML message format valid")
-                is_valid = True
+            if validator.from_string(resp.content):
+                logging.info("[TEST] message|OK|XML message format valid")
             else:
-                logging.info("[TEST] message KO|XML message format invalid")
+                logging.info("[TEST] message|KO|XML message format invalid")
+                is_valid = False
         except:
             logging.error("XML message format invalid")
 
@@ -116,7 +131,7 @@ def validate_header(url):
                              sand_url)
 
                 # Test 3 : Validating the provided message
-                is_valid = validate_body(sand_url)
+                is_valid = validate_response(sand_url, "200")
             except IOError:
                 logging.info("[TEST] URL KO|The provided URL is not valid|%s",
                              sand_url)
@@ -134,22 +149,28 @@ def validate_header(url):
 @click.command()
 @click.option("-u", "--url_to_request", help=("DANE URL to request,"
                                               " e.g. http://mydane.com"))
-@click.option("-m", "--sand_method", type=click.Choice([SAND_METHOD_HEADER,
-                                                        SAND_METHOD_BODY]),
-              help=("Location of the SAND informationin the HTTP response."))
-def main(sand_method, url_to_request):
+@click.option("-p", "--protocol",
+              type=click.Choice([SAND_PER_PROTOCOL_ASSISTANCE,
+                                 SAND_PER_PROTOCOL_ENFORCEMENT,
+                                 SAND_PER_PROTOCOL_ERROR]),
+              help=("Protocols to carry PER messages"
+                    " specified in ISO/IEC 23009-5"))
+def run(protocol, url_to_request):
     """
     Execute the request and the validation of the received HTTP response.
     """
     success = False
-    if sand_method == SAND_METHOD_HEADER:
+    if protocol == SAND_PER_PROTOCOL_ASSISTANCE:
         success = validate_header(url_to_request)
 
-    elif sand_method == SAND_METHOD_BODY:
-        success = validate_body(url_to_request)
+    elif protocol == SAND_PER_PROTOCOL_ENFORCEMENT:
+        success = validate_response(url_to_request, "300")
+
+    elif protocol == SAND_PER_PROTOCOL_ERROR:
+        success = validate_response(url_to_request, "4[0-9]{2}")
 
     else:
-        logging.error('Unknown SAND method "%s"', sand_method)
+        logging.error('Unknown SAND PER protocol "%s"', protocol)
         return
 
     if success:
@@ -160,4 +181,4 @@ def main(sand_method, url_to_request):
     return success
 
 if __name__ == "__main__":
-    main()
+    run()
