@@ -4,9 +4,9 @@ python:
   - "2.7"
 
 intstall:
-  - pip install -r requirements.txt
   - cd sand/
   - pip install -r requirements.txt
   - cd ..
+
 script:
   - python sand_client.py --help
