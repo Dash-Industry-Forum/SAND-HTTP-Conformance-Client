@@ -1,10 +1,10 @@
-# SAND conformance client
+# SAND Conformance Client
 
-This implements a conformance client for ISO/IEC 23009-5 Server And Network
+This implements a conformance client for ISO/IEC 23009-5 Server And Network-
 asssited DASH (SAND).
 
 It validates the incoming SAND messages as well as the protocols used by
-a SAND server.
+the DANE.
 
 ## Requirements
 
