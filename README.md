@@ -1,5 +1,7 @@
 # SAND Conformance Client
 
+[![Build Status](https://travis-ci.org/edrthomas/SAND-HTTP-Conformance-Client.svg?branch=master)](https://travis-ci.org/edrthomas/SAND-HTTP-Conformance-Client)
+
 This implements a conformance client for ISO/IEC 23009-5 Server And Network-
 asssited DASH (SAND).
 
